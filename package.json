@@ -6,6 +6,18 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "mocha"
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "jest": "^30.5.2",
+    "socket.io-client": "^4.8.4"
+  },
+  "jest": {
+    "testMatch": [
+      "**/test/una-lib.test.js",
+      "**/test/integration/chat.test.js"
+    ]
   }
 }

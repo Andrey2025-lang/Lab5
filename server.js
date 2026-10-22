@@ -6,7 +6,7 @@ var validation = require('./libs/unalib');
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 3001;
 
 // root: presentar html
 app.get('/', function(req, res){
@@ -24,6 +24,11 @@ io.on('connection', function(socket){
   });
 });
 
-http.listen(port, function(){
-  console.log('listening on *:' + port);
-});
+
+module.exports = http;
+
+if (process.env.NODE_ENV !== 'test') {
+  http.listen(port, function(){
+    console.log('listening on *:' + port);
+  });
+}
