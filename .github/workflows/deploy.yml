@@ -7,10 +7,26 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Solicitar despliegue
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar pruebas (Jest)
+        run: npm test
+      
+      # --- SI LAS PRUEBAS FALLAN, EL FLUJO SE DETIENE AQUÍ ---
+
+      - name: Solicitar despliegue a Render
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
