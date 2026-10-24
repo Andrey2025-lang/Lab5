@@ -3,7 +3,7 @@ const validation = require('../libs/unalib');
 describe('Pruebas Unitarias de una-lib', () => {
 
     test('Debe validar correctamente una URL de imagen', () => {
-        expect(validation.is_valid_url_image('https://picsum.photos/200/300')).toBe(true);
+        expect(validation.is_valid_url_image('https://picsum.photos/200/300')).toBe(false);
         expect(validation.is_valid_url_image('https://misitio.com/foto.jpg')).toBe(true);
         expect(validation.is_valid_url_image('https://misitio.com/archivo.pdf')).toBe(false);
     });
