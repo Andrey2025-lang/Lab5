@@ -10,7 +10,7 @@ test.describe('UNA Chat - Flujo Completo', () => {
     await page.locator('#m').fill('https://picsum.photos/200/300');
     
     // Hacer clic en enviar
-    await page.getByRole('button', { name: 'Send' }).click();
+    await page.getByRole('button', { name: 'Enviar' }).click();
 
     // Verificar que la imagen aparezca en el chat
     const imagen = page.locator('img[src="https://picsum.photos/200/300"]');
@@ -23,7 +23,7 @@ test.describe('UNA Chat - Flujo Completo', () => {
     await page.locator('#nombre').fill('Tester Playwright');
     await page.locator('#m').fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     
-    await page.getByRole('button', { name: 'Send' }).click();
+    await page.getByRole('button', { name: 'Enviar' }).click();
 
     // Verificar que el iframe del video de YouTube aparezca
     const iframeVideo = page.locator('iframe[src*="youtube.com/embed"]');
@@ -43,7 +43,7 @@ test.describe('UNA Chat - Flujo Completo', () => {
     await page.locator('#nombre').fill('Tester Playwright');
     await page.locator('#m').fill("<script>alert('Inyección de script');</script>");
     
-    await page.getByRole('button', { name: 'Send' }).click();
+    await page.getByRole('button', { name: 'Enviar' }).click();
 
     // Esperar un momento para ver si salta la alerta
     await page.waitForTimeout(1000);
