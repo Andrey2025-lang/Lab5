@@ -394,9 +394,12 @@
         <p id="composer-hint" class="composer-hint">Presiona Enter para enviar · Comparte texto, enlaces de imágenes o videos de YouTube.</p>
       </form>
     </main>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/api/socket-io/socket.io/socket.io.js"></script>
     <script>
-      const socket = io();
+      const socket = io({
+        path: '/api/socket-io/socket.io',
+        transports: ['websocket']
+      });
       const form = document.getElementById('message-form');
       const nameInput = document.getElementById('nombre');
       const messageInput = document.getElementById('m');

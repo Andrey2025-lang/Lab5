@@ -11,6 +11,7 @@ beforeAll((done) => {
   serverInstance = httpServer.listen(port, () => {
     // Una vez arriba, conectamos al cliente
     clientSocket = io(`http://localhost:${port}`, {
+      path: "/api/socket-io/socket.io",
       transports: ["websocket"],
       forceNew: true,
     });
