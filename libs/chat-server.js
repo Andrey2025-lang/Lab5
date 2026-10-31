@@ -1,7 +1,7 @@
 const { Server } = require('socket.io');
 const validation = require('./unalib');
 
-const SOCKET_PATH = '/api/socket-io/socket.io';
+const SOCKET_PATH = '/api/socket-io';
 
 function attachChatServer(httpServer) {
   const io = new Server(httpServer, {
