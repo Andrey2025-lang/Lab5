@@ -19,8 +19,14 @@ function createChatServer({env = process.env, authMiddleware} = {}) {
       'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; frame-src https://www.youtube.com; connect-src 'self' ws: wss:; base-uri 'none'; frame-ancestors 'none'; form-action 'self' https://"+(env.AUTH0_DOMAIN || "invalid.auth0.com")+""}); next();
   });
   if (authMiddleware) app.use(authMiddleware);
-  else if (configured) app.use(require('@auth0/auth0-express').createAuth0({domain:env.AUTH0_DOMAIN, clientId:env.AUTH0_CLIENT_ID, clientSecret:env.AUTH0_CLIENT_SECRET, appBaseUrl:baseURL, sessionSecret:secret, mountRoutes:false,
+  else if (configured) {
+    let authRouter;
+    app.use((req,res,next) => {
+      authRouter ??= import('@auth0/auth0-express').then(({createAuth0}) => createAuth0({domain:env.AUTH0_DOMAIN, clientId:env.AUTH0_CLIENT_ID, clientSecret:env.AUTH0_CLIENT_SECRET, appBaseUrl:baseURL, sessionSecret:secret, mountRoutes:false,
     sessionConfiguration:{rolling:false,absoluteDuration:28800,inactivityDuration:28800,cookie:{sameSite:'lax',secure:origin.startsWith('https:')}}}));
+      authRouter.then(router => router(req,res,next)).catch(next);
+    });
+  }
   async function session(req) {
     const data = await req.auth0?.client.getSession();
     if (!data?.user?.sub || !data.idToken) return null;
@@ -59,3 +65,4 @@ function createChatServer({env = process.env, authMiddleware} = {}) {
   return {app,server,chat};
 }
 module.exports = {createChatServer};
+
