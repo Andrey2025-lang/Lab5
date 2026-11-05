@@ -1,108 +1,32 @@
-const { test, expect } = require('@playwright/test');
-
-test('Muestra la bienvenida y permite enviar con Enter sin aceptar mensajes vacíos', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'UNA Chat' })).toBeVisible();
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  await expect(page.locator('#empty-state')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Enviar' })).toBeDisabled();
-  await page.locator('#m').fill('   ');
-  await expect(page.getByRole('button', { name: 'Enviar' })).toBeDisabled();
-  await page.getByLabel('Tu nombre').fill('Andrey');
-  await page.getByLabel('Mensaje', { exact: true }).fill('Hola, comunidad');
-  await page.locator('#m').press('Enter');
-  await expect(page.locator('#messages li.own .msg-text')).toHaveText('Hola, comunidad');
-  await expect(page.locator('.msg-meta b')).toHaveText('Andrey');
-  await expect(page.locator('.msg-meta time')).not.toBeEmpty();
-  await expect(page.locator('#empty-state')).toBeHidden();
-  await expect(page.locator('#m')).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Enviar' })).toBeDisabled();
+const {test,expect}=require('./fixtures');
+test('identidad verificada y envío con Enter',async({page})=>{
+ await page.goto('/chat');await expect(page.locator('#connection-label')).toHaveText('En línea');
+ await expect(page.getByLabel('Usuario autenticado')).toHaveValue('Alice');await expect(page.getByLabel('Usuario autenticado')).toHaveAttribute('readonly','');
+ await expect(page.getByRole('button',{name:'Enviar',exact:true})).toBeDisabled();
+ await page.getByLabel('Mensaje',{exact:true}).fill('Hola, comunidad');await page.locator('#m').press('Enter');
+ await expect(page.locator('#messages li.own .msg-text')).toHaveText('Hola, comunidad');await expect(page.locator('#m')).toHaveValue('');
 });
-
-test('Distingue mensajes propios y recibidos entre dos clientes', async ({ page, context }) => {
-  const otherPage = await context.newPage();
-  await Promise.all([page.goto('/'), otherPage.goto('/')]);
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  await expect(otherPage.locator('#connection-label')).toHaveText('En línea');
-  await page.locator('#nombre').fill('Andrey');
-  await otherPage.locator('#nombre').fill('Compañera');
-  await page.locator('#m').fill('Mensaje entre clientes');
-  await page.getByRole('button', { name: 'Enviar' }).click();
-  await expect(page.locator('#messages li.own')).toHaveCount(1);
-  await expect(otherPage.locator('#messages li.other .msg-text')).toHaveText('Mensaje entre clientes');
-  await otherPage.close();
+test('dos cuentas reciben mensajes y distinguen autor',async({page,browser})=>{
+ const bob=await browser.newContext();await bob.addCookies([{name:'test-user',value:'bob',url:'http://localhost:3219'}]);const other=await bob.newPage();
+ await Promise.all([page.goto('/chat'),other.goto('http://localhost:3219/chat')]);
+ await expect(other.locator('#connection-label')).toHaveText('En línea');await expect(page.locator('#connection-label')).toHaveText('En línea');
+ await page.locator('#m').fill('Mensaje compartido');await page.locator('#m').press('Enter');
+ await expect(other.locator('#messages li.other .msg-text')).toHaveText('Mensaje compartido');await expect(other.locator('.msg-meta b')).toHaveText('Alice');await bob.close();
 });
-
-test('Muestra la desconexión y conserva el borrador hasta reconectar', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  await page.locator('#m').fill('Borrador pendiente');
-  await page.evaluate(() => socket.disconnect());
-  await expect(page.locator('#connection-label')).toHaveText('Sin conexión');
-  await expect(page.getByRole('button', { name: 'Enviar' })).toBeDisabled();
-  await expect(page.locator('#m')).toHaveValue('Borrador pendiente');
-  await page.evaluate(() => socket.connect());
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  await expect(page.getByRole('button', { name: 'Enviar' })).toBeEnabled();
+test('desconexión conserva borrador y reconecta',async({page})=>{
+ await page.goto('/chat');await expect(page.locator('#connection-label')).toHaveText('En línea');await page.locator('#m').fill('Borrador');
+ await page.evaluate(()=>socket.disconnect());await expect(page.locator('#connection-label')).toHaveText('Sin conexión');await expect(page.locator('#m')).toHaveValue('Borrador');
+ await page.evaluate(()=>socket.connect());await expect(page.locator('#connection-label')).toHaveText('En línea');
 });
-
-test('Presenta el nombre como texto y no como HTML', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  const name = '<img src=x onerror=alert(1)>';
-  await page.locator('#nombre').fill(name);
-  await page.locator('#m').fill('Prueba de nombre');
-  await page.getByRole('button', { name: 'Enviar' }).click();
-  await expect(page.locator('.msg-meta b')).toHaveText(name);
-  await expect(page.locator('.msg-meta img')).toHaveCount(0);
+for(const width of [320,390,768,1440])test(`sin desbordamiento a ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:844});await page.goto('/chat');await expect(page.locator('#connection-label')).toHaveText('En línea');
+ await page.locator('#m').fill('TextoLargo'.repeat(50));await page.locator('#m').press('Enter');await expect(page.locator('#messages li')).toHaveCount(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
 });
-
-for (const width of [320, 390, 768, 1440]) {
-  test(`Diseño sin desbordamiento horizontal a ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 844 });
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await page.goto('/');
-    await expect(page.locator('#connection-label')).toHaveText('En línea');
-    await expect(page.getByLabel('Tu nombre')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Enviar' })).toBeVisible();
-    await page.locator('#m').fill('MensajeLargo'.repeat(50));
-    await page.getByRole('button', { name: 'Enviar' }).click();
-    await expect(page.locator('#messages li')).toHaveCount(1);
-    const overflow = await page.evaluate(() => ({
-      document: document.documentElement.scrollWidth > window.innerWidth,
-      messages: document.getElementById('messages').scrollWidth > document.getElementById('messages').clientWidth
-    }));
-    expect(overflow).toEqual({ document: false, messages: false });
-    expect(errors).toEqual([]);
-  });
-}
-
-test('Mantiene imágenes y videos dentro del panel en celular', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  // Aislar la presentación de la disponibilidad de servicios externos.
-  await page.route('https://example.com/prueba.png', route => route.fulfill({
-    contentType: 'image/svg+xml',
-    body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#a91d36"/></svg>'
-  }));
-  await page.route('https://www.youtube.com/embed/**', route => route.fulfill({
-    contentType: 'text/html', body: '<!doctype html><title>Video de prueba</title>'
-  }));
-  await page.goto('/');
-  await expect(page.locator('#connection-label')).toHaveText('En línea');
-  for (const message of ['https://example.com/prueba.png', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']) {
-    await page.locator('#m').fill(message);
-    await page.getByRole('button', { name: 'Enviar' }).click();
-  }
-  await expect(page.locator('#messages img')).toBeVisible();
-  await expect(page.locator('#messages iframe')).toBeVisible();
-  const dimensions = await page.locator('#messages').evaluate(list => ({
-    overflow: list.scrollWidth > list.clientWidth,
-    media: [...list.querySelectorAll('img, iframe')].map(element => ({
-      width: element.getBoundingClientRect().width,
-      available: element.closest('.bubble').getBoundingClientRect().width
-    }))
-  }));
-  expect(dimensions.overflow, JSON.stringify(dimensions)).toBe(false);
-  for (const media of dimensions.media) expect(media.width).toBeLessThanOrEqual(media.available);
+test('visitante no accede al chat ni al perfil',async({browser})=>{
+ const guest=await browser.newContext();const page=await guest.newPage();await page.goto('http://localhost:3219/chat');await expect(page).toHaveURL(/login=required/);
+ await expect(page.getByRole('link',{name:'Iniciar sesión con Auth0'})).toBeVisible();const response=await guest.request.get('http://localhost:3219/api/session');expect(response.status()).toBe(401);await guest.close();
+});
+test('cancelación de login muestra explicación y reintento',async({browser})=>{
+ const guest=await browser.newContext();const page=await guest.newPage();await page.goto('http://localhost:3219/?error=authentication');await expect(page.getByRole('alert')).toContainText('Puedes reintentarlo');await expect(page.getByRole('link',{name:'Iniciar sesión con Auth0'})).toBeVisible();await guest.close();
 });

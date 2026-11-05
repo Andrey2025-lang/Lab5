@@ -1,0 +1,25 @@
+version: 1
+project:
+  root: .
+  stacks: [node, express, socket.io]
+  package_managers: [npm]
+  monorepo: false
+sdd:
+  artifact_store: 02-DOCS/wiki/sdd
+  execution_mode: automatic
+  autopilot: true
+  registry_path: .rsc/skill-registry.json
+  review_budget:
+    line_budget: 400
+    file_budget: 12
+  delivery_strategy:
+    default: ask-on-risk
+testing:
+  strict_tdd: true
+  runners: [jest, playwright]
+  commands:
+    apply: ['npm test -- --runInBand']
+    verify: ['npm test -- --runInBand', 'npm run check']
+models:
+  enabled: false
+  provider: openai

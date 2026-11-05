@@ -377,114 +377,26 @@
         <div id="empty-state" class="empty">
           <span class="icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 2V11.5a10 10 0 0 1 20 0Z"/><path d="M7 9h8M7 13h5"/></svg></span>
           <h2>La conversación empieza contigo</h2>
-          <p>Elige un nombre y comparte tu primer mensaje con la comunidad.</p>
+          <p>Comparte tu primer mensaje con la comunidad.</p>
         </div>
         <ul id="messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Mensajes de la sala general"></ul>
       </section>
       <form id="message-form" action="">
         <div class="field field-name">
-          <label for="nombre">Tu nombre</label>
-          <input id="nombre" name="nombre" autocomplete="nickname" placeholder="Ej. Andrey" maxlength="60" />
+          <label for="nombre">Tu cuenta</label>
+          <input id="nombre" name="nombre" aria-label="Usuario autenticado" readonly />
         </div>
         <div class="field">
           <label for="m">Mensaje</label>
-          <input id="m" name="mensaje" autocomplete="off" placeholder="Escribe un mensaje…" aria-describedby="composer-hint" />
+          <input id="m" maxlength="4000" name="mensaje" autocomplete="off" placeholder="Escribe un mensaje…" aria-describedby="composer-hint" />
         </div>
         <button id="send-button" type="submit" disabled><span>Enviar</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></button>
         <p id="composer-hint" class="composer-hint">Presiona Enter para enviar · Comparte texto, enlaces de imágenes o videos de YouTube.</p>
       </form>
+      <p id="message-error" role="alert" style="padding:0 24px;color:#9b283a"></p>
+      <form id="logout-form" method="post" action="/auth/logout" style="display:block;padding:8px 24px"><button type="submit" style="min-height:36px;padding:6px 14px">Cerrar sesión</button></form>
     </main>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const socket = io();
-      const form = document.getElementById('message-form');
-      const nameInput = document.getElementById('nombre');
-      const messageInput = document.getElementById('m');
-      const sendButton = document.getElementById('send-button');
-      const messages = document.getElementById('messages');
-      const emptyState = document.getElementById('empty-state');
-      const status = document.getElementById('connection-status');
-      const statusLabel = document.getElementById('connection-label');
-      const colors = ['#a91d36', '#245d9c', '#37624a', '#725194', '#925c25'];
-      const colorHexTxt = '#' + Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0');
-      const messageTime = new Intl.DateTimeFormat('es-CR', { hour: '2-digit', minute: '2-digit' });
-
-      function updateSendButton() {
-        sendButton.disabled = !socket.connected || !messageInput.value.trim();
-      }
-
-      function updateConnection(state, label) {
-        status.dataset.state = state;
-        statusLabel.textContent = label;
-        updateSendButton();
-      }
-
-      socket.on('connect', () => updateConnection('connected', 'En línea'));
-      socket.on('disconnect', () => updateConnection('disconnected', 'Sin conexión'));
-      socket.on('connect_error', () => updateConnection('disconnected', 'Sin conexión'));
-      messageInput.addEventListener('input', updateSendButton);
-
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const mensaje = messageInput.value.trim();
-        if (!socket.connected || !mensaje) return;
-
-        socket.emit('Evento-Mensaje-Server', JSON.stringify({
-          nombre: nameInput.value.trim() || 'Anónimo',
-          mensaje,
-          color: colorHexTxt
-        }));
-        messageInput.value = '';
-        updateSendButton();
-        messageInput.focus();
-      });
-
-      socket.on('Evento-Mensaje-Server', (message) => {
-        let data;
-        try {
-          data = JSON.parse(message);
-        } catch {
-          return;
-        }
-        if (!data || typeof data.mensaje !== 'string') return;
-
-        const nombre = typeof data.nombre === 'string' ? data.nombre : 'Anónimo';
-        const color = /^#[0-9a-f]{6}$/i.test(data.color)
-          ? colors[parseInt(data.color.slice(1), 16) % colors.length]
-          : colors[0];
-        const ownMessage = nombre === (nameInput.value.trim() || 'Anónimo') && data.color === colorHexTxt;
-        const item = document.createElement('li');
-        item.className = ownMessage ? 'own' : 'other';
-
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        avatar.textContent = nombre.charAt(0).toUpperCase() || '?';
-        avatar.style.backgroundColor = color;
-        avatar.setAttribute('aria-hidden', 'true');
-
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        const meta = document.createElement('div');
-        meta.className = 'msg-meta';
-        const author = document.createElement('b');
-        author.textContent = nombre;
-        const time = document.createElement('time');
-        const now = new Date();
-        time.dateTime = now.toISOString();
-        time.textContent = messageTime.format(now);
-        meta.append(author, time);
-
-        const content = document.createElement('div');
-        content.className = 'msg-text';
-        // El servidor genera HTML para imágenes y videos: conservar ese contrato.
-        // Esto no sustituye una revisión completa del saneamiento del backend.
-        content.innerHTML = data.mensaje;
-        bubble.append(meta, content);
-        item.append(avatar, bubble);
-        emptyState.hidden = true;
-        messages.append(item);
-        messages.scrollTop = messages.scrollHeight;
-      });
-    </script>
+    <script src="/socket.io.min.js"></script>
+    <script src="/chat.js" defer></script>
   </body>
 </html>

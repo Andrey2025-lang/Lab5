@@ -1,23 +1,32 @@
 {
   "dependencies": {
+    "@auth0/auth0-express": "^1.0.0",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "dotenv": "^18.0.9",
     "express": "*",
-    "mocha": "^10.2.0",
+    "redis": "^6.3.1",
     "socket.io": "*"
   },
   "scripts": {
     "start": "node server.js",
-    "test": "jest"
+    "test": "jest",
+    "check": "node --check server.js && node --check libs/app.js && node --check libs/chat-server.js && node --check public/chat.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "jest": "^30.5.2",
+    "mocha": "^12.0.3",
     "socket.io-client": "^4.8.4"
   },
   "jest": {
     "testMatch": [
       "**/test/una-lib.test.js",
-      "**/test/integration/chat.test.js"
+      "**/test/integration/*.test.js",
+      "**/test/auth/*.test.js"
     ]
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
